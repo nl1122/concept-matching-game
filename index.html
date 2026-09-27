@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>概念归位｜课堂连线挑战</title>
+<style>
+  :root{
+    --red:#c71f2d;
+    --red2:#e64848;
+    --gold:#f1b942;
+    --ink:#222;
+    --muted:#6b7280;
+    --paper:#fffaf6;
+    --panel:#ffffff;
+    --line:#d5d9e0;
+    --ok:#168a4d;
+    --bad:#c23a3a;
+    --blue:#2f66d0;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",Arial,sans-serif;background:
+    radial-gradient(circle at 10% 0%, #fff 0, #fff8f3 28%, transparent 55%),
+    linear-gradient(135deg,#fffdfb,#fff4ed 58%,#fffdfb);color:var(--ink);}
+  body{overflow-x:hidden}
+  .app{min-height:100%;padding:24px 28px 30px;display:flex;flex-direction:column;gap:16px}
+  .topbar{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+  .titlebox h1{margin:0;font-size:clamp(26px,3vw,44px);font-weight:900;letter-spacing:.5px}
+  .titlebox h1 span{color:var(--red)}
+  .titlebox p{margin:8px 0 0;color:var(--muted);font-size:clamp(14px,1.4vw,18px)}
+  .hud{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .chip{background:white;border:1px solid #eed8cc;border-radius:999px;padding:9px 14px;font-weight:700;box-shadow:0 4px 14px rgba(99,48,20,.06)}
+  .chip strong{color:var(--red)}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 12px;background:rgba(255,255,255,.8);border:1px solid #f0dcd2;border-radius:16px;box-shadow:0 8px 28px rgba(100,50,20,.07)}
+  button,select{font:inherit}
+  button{border:0;border-radius:12px;padding:10px 16px;font-weight:800;cursor:pointer;transition:.18s transform,.18s box-shadow,.18s opacity}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .primary{background:var(--red);color:white;box-shadow:0 6px 16px rgba(199,31,45,.23)}
+  .secondary{background:#fff;border:1px solid #e6c8bc;color:#5b3429}
+  .ghost{background:#fff5ef;color:#a3342e;border:1px solid #f0cbbd}
+  select{border:1px solid #e1cfc6;background:white;border-radius:10px;padding:9px 12px;font-weight:700;color:#5b3429}
+  .game{position:relative;flex:1;min-height:560px;background:rgba(255,255,255,.85);border:2px solid #e54a3e;border-radius:20px;box-shadow:0 14px 35px rgba(115,45,20,.12);padding:26px 28px 24px;overflow:hidden}
+  .hint{display:flex;justify-content:space-between;gap:18px;margin-bottom:12px;color:#694a3f;font-size:14px;font-weight:700;flex-wrap:wrap}
+  .columns{display:grid;grid-template-columns:minmax(220px,1fr) minmax(220px,1fr);gap:clamp(100px,18vw,300px);position:relative;z-index:2;padding:8px 10px 14px}
+  .col{display:flex;flex-direction:column;gap:14px}
+  .colhead{text-align:center;font-weight:900;font-size:clamp(18px,2vw,26px);margin-bottom:2px;color:#7b2b28}
+  .card{position:relative;min-height:64px;background:var(--panel);border:2px solid #e4e6ea;border-radius:14px;padding:15px 18px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:clamp(17px,1.7vw,23px);font-weight:800;line-height:1.35;box-shadow:0 6px 15px rgba(22,23,28,.07);cursor:pointer;user-select:none;transition:.18s transform,.18s border-color,.18s box-shadow,.18s background}
+  .card:hover{transform:translateY(-2px);box-shadow:0 9px 22px rgba(22,23,28,.11);border-color:#c8ccd4}
+  .card.selected{border-color:var(--red);box-shadow:0 0 0 4px rgba(199,31,45,.10),0 9px 22px rgba(22,23,28,.11);background:#fff9f6}
+  .card.connected{border-color:#c9b6ad;background:#fffdfa}
+  .card.correct{border-color:var(--ok)!important;background:#f0fbf5!important;color:#0d6d3c}
+  .card.wrong{border-color:var(--bad)!important;background:#fff1f1!important;color:#a22b2b}
+  .dot{position:absolute;width:15px;height:15px;border-radius:50%;background:#fff;border:3px solid var(--red);top:50%;transform:translateY(-50%);z-index:3}
+  .left .dot{right:-9px}.right .dot{left:-9px}
+  #lines{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:visible}
+  .status{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 16px 0;font-size:15px;color:#6b5149}
+  .status b{color:var(--red)}
+  .message{font-weight:900;font-size:clamp(16px,1.5vw,20px)}
+  .bottomnote{color:#a02525;font-weight:900;text-align:center;padding-top:2px;font-size:clamp(14px,1.2vw,17px)}
+  .answerKey{display:none;margin-top:14px;padding:16px 18px;background:#fff8e7;border:1px solid #eed38a;border-radius:14px;line-height:1.8}
+  .answerKey.show{display:block}
+  .answerKey strong{color:#8b5d00}
+  .modal{position:fixed;inset:0;background:rgba(30,20,15,.48);display:none;align-items:center;justify-content:center;z-index:20;padding:20px}
+  .modal.show{display:flex}
+  .modalbox{width:min(520px,95vw);background:white;border-radius:22px;padding:28px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.22);border:2px solid #f0d4c8}
+  .modalbox h2{font-size:34px;margin:0 0 8px}.modalbox p{font-size:18px;color:#5c5f66;line-height:1.6}.scorebig{font-size:54px;font-weight:1000;color:var(--red);margin:10px 0}
+  .confetti{position:fixed;width:10px;height:18px;z-index:30;top:-25px;pointer-events:none;animation:fall 2.4s linear forwards}
+  @keyframes fall{to{transform:translate3d(var(--dx),110vh,0) rotate(760deg);opacity:.9}}
+  @media (max-width:760px){
+    .app{padding:14px}.game{padding:18px 12px}.columns{gap:46px;padding:6px 2px}.card{padding:12px 8px;min-height:58px;font-size:15px}.dot{width:13px;height:13px}.left .dot{right:-8px}.right .dot{left:-8px}.hint{font-size:12px}.toolbar{padding:8px}.chip{padding:8px 10px}
+  }
+  @media (max-height:760px) and (min-width:900px){.game{min-height:480px}.card{min-height:56px;padding:11px 16px}.col{gap:9px}.columns{padding-top:0}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="titlebox">
+      <h1>互动挑战｜<span>把概念放回正确层次</span></h1>
+      <p>先点左侧概念，再点右侧对应类别。连满6组后点击“检查答案”。</p>
+    </div>
+    <div class="hud">
+      <div class="chip">已连接 <strong id="connectedCount">0</strong>/6</div>
+      <div class="chip">计时 <strong id="timer">00:00</strong></div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="primary" id="startBtn">开始挑战</button>
+    <button class="secondary" id="checkBtn">检查答案</button>
+    <button class="secondary" id="resetBtn">重新开始</button>
+    <button class="ghost" id="answerBtn">显示答案</button>
+    <select id="modeSelect" aria-label="计时模式">
+      <option value="0">自由计时</option>
+      <option value="60">60秒挑战</option>
+      <option value="90" selected>90秒挑战</option>
+    </select>
+    <button class="secondary" id="fullscreenBtn">全屏</button>
+  </div>
+
+  <section class="game" id="game">
+    <div class="hint">
+      <span>左侧：概念 / 现象</span>
+      <span>右侧：所属层次</span>
+    </div>
+    <svg id="lines" aria-hidden="true"></svg>
+    <div class="columns">
+      <div class="col left" id="leftCol">
+        <div class="colhead">概念 / 现象</div>
+      </div>
+      <div class="col right" id="rightCol">
+        <div class="colhead">所属层次</div>
+      </div>
+    </div>
+    <div class="status">
+      <div class="message" id="message">点击“开始挑战”，看看谁能最快完成。</div>
+      <div>提示：连错也没关系，再次点击可重新连接。</div>
+    </div>
+    <div class="answerKey" id="answerKey"></div>
+    <div class="bottomnote">互联网最容易干的一件事，就是把不同层级的东西混在一起。</div>
+  </section>
+</div>
+
+<div class="modal" id="resultModal">
+  <div class="modalbox">
+    <h2 id="resultTitle">挑战完成</h2>
+    <div class="scorebig" id="resultScore">6 / 6</div>
+    <p id="resultText"></p>
+    <button class="primary" id="closeModal">继续讲解</button>
+  </div>
+</div>
+
+<script>
+const pairs = [
+  {left:'市场机制', right:'运行机制'},
+  {left:'公有制为主体', right:'基本制度'},
+  {left:'民营企业', right:'经济主体'},
+  {left:'按劳分配为主体', right:'分配方式'},
+  {left:'共同富裕', right:'价值目标'},
+  {left:'某项财政补贴', right:'政策工具'}
+];
+const colors = ['#c71f2d','#2f66d0','#168a4d','#8b5cf6','#c47a00','#008c9e'];
+let connections = new Map();
+let selectedLeft = null;
+let running = false;
+let timerId = null;
+let startTime = 0;
+let deadline = 0;
+let checked = false;
+
+const $ = id => document.getElementById(id);
+const leftCol = $('leftCol'), rightCol = $('rightCol'), svg = $('lines');
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function makeCard(text, side){
+  const d=document.createElement('div');
+  d.className='card '+side;
+  d.dataset.value=text;
+  d.innerHTML=`<span>${text}</span><i class="dot"></i>`;
+  d.addEventListener('click',()=> side==='left' ? chooseLeft(d) : chooseRight(d));
+  return d;
+}
+
+function render(){
+  [...leftCol.querySelectorAll('.card')].forEach(x=>x.remove());
+  [...rightCol.querySelectorAll('.card')].forEach(x=>x.remove());
+  shuffle(pairs.map(p=>p.left)).forEach(t=>leftCol.appendChild(makeCard(t,'left')));
+  shuffle(pairs.map(p=>p.right)).forEach(t=>rightCol.appendChild(makeCard(t,'right')));
+  connections.clear(); selectedLeft=null; checked=false; updateUI(); drawLines();
+}
+
+function chooseLeft(card){
+  if(checked) clearFeedback();
+  [...leftCol.querySelectorAll('.card')].forEach(c=>c.classList.remove('selected'));
+  selectedLeft=card.dataset.value;
+  card.classList.add('selected');
+  $('message').textContent=`已选择“${selectedLeft}”，请选择右侧对应层次。`;
+}
+
+function chooseRight(card){
+  if(!selectedLeft){
+    $('message').textContent='请先选择左侧一个概念。';
+    card.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],{duration:260});
+    return;
+  }
+  if(checked) clearFeedback();
+  // one-to-one: remove any existing connection using this right value
+  for(const [l,r] of [...connections.entries()]) if(r===card.dataset.value) connections.delete(l);
+  connections.set(selectedLeft, card.dataset.value);
+  selectedLeft=null;
+  [...leftCol.querySelectorAll('.card')].forEach(c=>c.classList.remove('selected'));
+  updateUI(); drawLines();
+  $('message').textContent = connections.size===6 ? '6组已连接完成，可以点击“检查答案”。' : '连接成功，继续下一组。';
+}
+
+function updateUI(){
+  $('connectedCount').textContent=connections.size;
+  const leftCards=[...leftCol.querySelectorAll('.card')];
+  const rightCards=[...rightCol.querySelectorAll('.card')];
+  leftCards.forEach(c=>c.classList.toggle('connected',connections.has(c.dataset.value)));
+  rightCards.forEach(c=>c.classList.toggle('connected',[...connections.values()].includes(c.dataset.value)));
+}
+
+function drawLines(){
+  const box=$('game').getBoundingClientRect();
+  svg.setAttribute('viewBox',`0 0 ${box.width} ${box.height}`);
+  svg.innerHTML='';
+  let idx=0;
+  for(const [l,r] of connections){
+    const lc=[...leftCol.querySelectorAll('.card')].find(c=>c.dataset.value===l);
+    const rc=[...rightCol.querySelectorAll('.card')].find(c=>c.dataset.value===r);
+    if(!lc||!rc) continue;
+    const a=lc.querySelector('.dot').getBoundingClientRect();
+    const b=rc.querySelector('.dot').getBoundingClientRect();
+    const x1=a.left+a.width/2-box.left, y1=a.top+a.height/2-box.top;
+    const x2=b.left+b.width/2-box.left, y2=b.top+b.height/2-box.top;
+    const dx=Math.max(60,(x2-x1)*.34);
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',`M ${x1} ${y1} C ${x1+dx} ${y1}, ${x2-dx} ${y2}, ${x2} ${y2}`);
+    path.setAttribute('fill','none');
+    path.setAttribute('stroke',colors[idx%colors.length]);
+    path.setAttribute('stroke-width','5');
+    path.setAttribute('stroke-linecap','round');
+    path.setAttribute('opacity','.9');
+    svg.appendChild(path); idx++;
+  }
+}
+
+function clearFeedback(){
+  checked=false;
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('correct','wrong'));
+}
+
+function checkAnswers(){
+  if(connections.size<6){$('message').textContent=`还差 ${6-connections.size} 组没有连接。`;return;}
+  checked=true;
+  let score=0;
+  const truth=new Map(pairs.map(p=>[p.left,p.right]));
+  for(const [l,r] of connections){
+    const ok=truth.get(l)===r;
+    if(ok) score++;
+    const lc=[...leftCol.querySelectorAll('.card')].find(c=>c.dataset.value===l);
+    const rc=[...rightCol.querySelectorAll('.card')].find(c=>c.dataset.value===r);
+    lc.classList.add(ok?'correct':'wrong'); rc.classList.add(ok?'correct':'wrong');
+  }
+  $('message').textContent=`本轮得分：${score}/6。`;
+  if(score===6){
+    stopTimer(); confetti();
+    $('resultTitle').textContent='全部正确！';
+    $('resultScore').textContent='6 / 6';
+    $('resultText').textContent='你已经把不同层级的概念区分开了：不要用一个局部现象代替对整个制度结构的判断。';
+  } else {
+    $('resultTitle').textContent='再想一步';
+    $('resultScore').textContent=`${score} / 6`;
+    $('resultText').textContent='有些概念被放到了不同层级。关闭后可重新连接错误项，再次检查。';
+  }
+  $('resultModal').classList.add('show');
+}
+
+function resetGame(){
+  stopTimer(); $('timer').textContent='00:00'; $('answerKey').classList.remove('show'); $('answerBtn').textContent='显示答案';
+  render(); $('message').textContent='点击“开始挑战”，看看谁能最快完成。';
+}
+
+function startGame(){
+  render(); $('answerKey').classList.remove('show'); $('answerBtn').textContent='显示答案';
+  running=true; startTime=Date.now();
+  const sec=Number($('modeSelect').value); deadline=sec?startTime+sec*1000:0;
+  $('message').textContent=sec?`挑战开始！限时 ${sec} 秒。`:'挑战开始！自由计时。';
+  clearInterval(timerId); timerId=setInterval(tick,200); tick();
+}
+
+function tick(){
+  if(!running) return;
+  let ms=Date.now()-startTime;
+  if(deadline){
+    const remain=Math.max(0,deadline-Date.now());
+    const s=Math.ceil(remain/1000); $('timer').textContent=`00:${String(s).padStart(2,'0')}`;
+    if(remain<=0){stopTimer();$('message').textContent='时间到！可以检查目前答案，或重新挑战。';checkAnswers();}
+  } else {
+    const s=Math.floor(ms/1000), m=Math.floor(s/60); $('timer').textContent=`${String(m).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  }
+}
+function stopTimer(){running=false;clearInterval(timerId);timerId=null;}
+
+function toggleAnswers(){
+  const box=$('answerKey'); const showing=box.classList.toggle('show');
+  $('answerBtn').textContent=showing?'隐藏答案':'显示答案';
+  if(showing){box.innerHTML='<strong>参考答案：</strong><br>'+pairs.map(p=>`${p.left} → ${p.right}`).join('　｜　');}
+}
+
+function confetti(){
+  for(let i=0;i<80;i++){
+    const c=document.createElement('i');c.className='confetti';c.style.left=Math.random()*100+'vw';c.style.background=colors[i%colors.length];c.style.setProperty('--dx',(Math.random()*260-130)+'px');c.style.animationDelay=(Math.random()*.45)+'s';document.body.appendChild(c);setTimeout(()=>c.remove(),3200);
+  }
+}
+
+$('startBtn').onclick=startGame;
+$('checkBtn').onclick=checkAnswers;
+$('resetBtn').onclick=resetGame;
+$('answerBtn').onclick=toggleAnswers;
+$('closeModal').onclick=()=>$('resultModal').classList.remove('show');
+$('resultModal').addEventListener('click',e=>{if(e.target===$('resultModal'))$('resultModal').classList.remove('show')});
+$('fullscreenBtn').onclick=()=>{ if(!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); };
+window.addEventListener('resize',drawLines);
+new ResizeObserver(drawLines).observe($('game'));
+render();
+</script>
+</body>
+</html>
